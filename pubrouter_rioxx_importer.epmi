@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://template.ulcc.ac.uk/id/epm/pubrouter_rioxx_importer'>
+  <epmid>pubrouter_rioxx_importer</epmid>
+  <documents>
+    <document>
+      <files>
+        <file>
+          <datasetid>document</datasetid>
+          <filename>lang/en/phrases/zz_pubrouter.xml</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>2e8adf2b4253bb50c03bee866baff4bd</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>223</filesize>
+        </file>
+        <file>
+          <datasetid>document</datasetid>
+          <filename>plugins/EPrints/Plugin/Import/PubRouter.pm</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>cef70b37688464c63dc31055f0e3b560</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>28784</filesize>
+        </file>
+        <file>
+          <datasetid>document</datasetid>
+          <filename>epm/pubrouter_rioxx_importer/static/images/epm/pubrouter_rioxx_importer.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>be5bae6e452ecfe87966cb015e8f4a76</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>23297</filesize>
+        </file>
+        <file>
+          <datasetid>document</datasetid>
+          <filename>epm/pubrouter_rioxx_importer/cfg/cfg.d/zzz_pubrouter_rioxx_importer.pl</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>e0d032a2f5721a913ac10e104bf2a3a3</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>1601</filesize>
+        </file>
+      </files>
+      <mime_type>text/plain</mime_type>
+      <format>text</format>
+      <main>epm/pubrouter_rioxx_importer/cfg/cfg.d/zzz_pubrouter_rioxx_importer.pl</main>
+      <content>install</content>
+    </document>
+  </documents>
+  <version>1.0.2</version>
+  <creators>
+    <item>
+      <name>
+        <family>Name</family>
+        <given>Your</given>
+      </name>
+      <id>you@email.address</id>
+    </item>
+  </creators>
+  <datestamp>2018-04-03 00:30:00</datestamp>
+  <title>Jisc PubRouter RIOXXplus Connector</title>
+  <description>This is the description.</description>
+  <requirements>The following modules are required: X, Y, Z</requirements>
+  <home_page>http://github.com/your/project</home_page>
+</epm>
