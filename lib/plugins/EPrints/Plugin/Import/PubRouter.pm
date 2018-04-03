@@ -794,7 +794,7 @@ sub xml_to_epdata
 		}
 		else
 		{	
-			push $secondary, $doc; #process these documents later
+			push @{$secondary}, $doc; #process these documents later
 		}
 	}
 
