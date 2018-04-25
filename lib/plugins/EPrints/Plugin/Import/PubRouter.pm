@@ -23,7 +23,6 @@ package EPrints::Plugin::Import::PubRouter;
 use strict;
 
 use EPrints::Plugin::Import::DefaultXML;
-use Locale::Language;
 use LWP::Simple;
 
 our @ISA = qw/ EPrints::Plugin::Import::DefaultXML /;
