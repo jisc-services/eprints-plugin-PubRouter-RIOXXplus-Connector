@@ -296,7 +296,8 @@ sub xml_to_epdata
 	}
 
 	#pages
-	$epdata->{pages} = $plugin->getNameSpaceValue( $xml, $namespaces{'pr'}, 'num_pages' );
+    my $pages = $plugin->getNameSpaceValue( $xml, $namespaces{'pr'}, 'num_pages' );
+	$epdata->{pages} = $pages if($pages =~ /^\d+$/);
 
 	#language
 	my $code = $plugin->getNameSpaceValue( $xml, $namespaces{'dcterms'}, 'language' );
