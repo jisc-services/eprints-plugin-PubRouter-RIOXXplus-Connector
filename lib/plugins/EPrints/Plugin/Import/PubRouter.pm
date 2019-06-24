@@ -174,13 +174,10 @@ sub xml_to_epdata
 
 	#note
 	my @notes = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'note' );
-	my $note_text;
 	foreach my $n ( @notes )
 	{
-		push @{$note_text}, $plugin->xml_to_text( $n );	
+		$epdata->{note} = $epdata->{note} . $plugin->xml_to_text( $n );	
 	}
-	$epdata->{note} = join( " " . $plugin->phrase( "note_separator"), @{$note_text} ) . " " if defined $note_text;
-	$epdata->{note} ||= "";
 
 	#comment
 	$epdata->{suggestions} = $plugin->getNameSpaceValue( $xml, $namespaces{'pr'}, 'comment' );
@@ -233,7 +230,6 @@ sub xml_to_epdata
 	#source id
 	my @sourceids = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'source_id');	
 	my $issn_set = 0;
-	my @sourceid_notes;
 	foreach my $sourceid (@sourceids)
 	{
 		my $sourceid_type = $sourceid->getAttribute( "type" );
@@ -253,14 +249,7 @@ sub xml_to_epdata
 		elsif( $sourceid_type eq "isbn" )
 		{
 			$epdata->{isbn} = $plugin->xml_to_text( $sourceid );
-		}
-		
-		#Add all types of source_id values to Additional Information field
-		push @sourceid_notes, "$sourceid_type " . $plugin->xml_to_text( $sourceid );
-	}
-	if( scalar @sourceid_notes > 0 )
-	{
-		$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "Journal IDs", join( "; ", @sourceid_notes ) );
+		}	
 	}
 
 	#publisher
@@ -296,7 +285,7 @@ sub xml_to_epdata
 	}
 
 	#pages
-    my $pages = $plugin->getNameSpaceValue( $xml, $namespaces{'pr'}, 'num_pages' );
+	my $pages = $plugin->getNameSpaceValue( $xml, $namespaces{'pr'}, 'num_pages' );
 	$epdata->{pages} = $pages if($pages =~ /^\d+$/);
 
 	#language
@@ -322,25 +311,16 @@ sub xml_to_epdata
 	}
 
 	#now loop around again, now that DOI has been handled
-	my @id_notes;
 	foreach my $id (@identifiers)
 	{
 		my $identifier_type = $id->getAttribute( "type" );
 		if( $identifier_type ne "doi" )
 		{
-			if( defined $epdata->{id_number} )
-			{
-				push @id_notes, "$identifier_type: " . $plugin->xml_to_text( $id );
-			} 
-			else
+			if( !defined $epdata->{id_number} )
 			{
 				$epdata->{id_number} = $plugin->xml_to_text( $id );
 			}	
 		}
-	}
-	if( scalar @id_notes > 0 )
-	{
-		$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "Article IDs", join( "; ", @id_notes ) );
 	}
 
 	#version_of_record
@@ -353,9 +333,6 @@ sub xml_to_epdata
 	if( $acceptance_date )
 	{
 		my ( $year, $month, $day ) = split /-/, $acceptance_date;
-                my $date_string = $year;
-                $date_string = "$month-$date_string" if defined $month;
-                $date_string = "$day-$date_string" if defined $day;
 		if( $dataset->has_field( "dates" ) )
                 {
                         $epdata->{dates} ||= [];
@@ -369,10 +346,6 @@ sub xml_to_epdata
 		{
 			$epdata->{rioxx2_dateAccepted_input} = $acceptance_date;
 		}
-		else
-		{
-			$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "Accepted", $date_string );
-		}
 	}
 
 	#publication date
@@ -382,9 +355,6 @@ sub xml_to_epdata
 	if( $publication_date )
 	{
 		my ( $year, $month, $day ) = split /-/, $publication_date;
-                my $date_string = $year;
-                $date_string = "$month-$date_string" if defined $month;
-                $date_string = "$day-$date_string" if defined $day;
 		if( $dataset->has_field( "dates" ) )
 		{
 			$epdata->{dates} ||= [];
@@ -404,15 +374,11 @@ sub xml_to_epdata
 
 	#history dates
 	my @dates = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'history_date' );
-	my @date_notes;
 	foreach my $date ( @dates )
 	{	
 		my $date_set = 0;
 		my $d = $plugin->xml_to_text( $date );
 		my ( $year, $month, $day ) = split /-/, $d;
-		my $date_string = $year;
-		$date_string = "$month-$date_string" if defined $month;
-		$date_string = "$day-$date_string" if defined $day;
 		my $date_type = $date->getAttribute( "type" );
 
 		if( ! ( ($date_type eq "accepted" && $acceptance_set) || ($date_type eq "published" && $publication_set ) ) )
@@ -437,14 +403,7 @@ sub xml_to_epdata
                 	        $epdata->{date_type} = $date_type;
 				$date_set = 1;
 			}
-		}
-		
-		#always add date to Additional Information field
-		push @date_notes, "$date_type $date_string";		
-	}
-	if( scalar @date_notes > 0 )
-	{
-		$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "History", join( "; ", @date_notes ) );	
+		}	
 	}
 
 	#status
@@ -495,91 +454,23 @@ sub xml_to_epdata
 		}
 	}
 
-	#free_to_read
-	my $free_to_read = $xml->getElementsByTagNameNS( $namespaces{ali}, "free_to_read" )->item(0);
-	if( $free_to_read && $dataset->has_field( "rioxx2_free_to_read_input" ) )
-	{
-		my $start_date = $free_to_read->getAttribute( "start_date" );
-		my $end_date = $free_to_read->getAttribute( "end_date" ) ;
-		$epdata->{rioxx2_free_to_read_input} = {
-			free_to_read => "Yes",
-			start_date => $start_date,
-			end_date => $end_date,
-		};
-	}
-
 	#license
-	my @licenses = $xml->getElementsByTagNameNS( $namespaces{pr}, "license" );
-	
-	#create the additional information content
-	my %license_notes;
-	my %licenses;
-	foreach my $license (@licenses)
+	my $license = $xml->getElementsByTagNameNS( $namespaces{ali}, "license_ref_start_date" )->item(0);
+	if( $license && $dataset->has_field( "rioxx2_license_ref_input" ) )
 	{
-		#get license data
-		my $license_start_date = $license->getAttribute( "start_date" );
-		my ( $year, $month, $day ) = split /-/, $license_start_date;
-                my $date_string = $year;
-                $date_string = "$month-$date_string" if defined $month;
-                $date_string = "$day-$date_string" if defined $day;
-		my $license_url = $license->getAttribute( "url" );
-		my $license_version = $license->getAttribute( "version" );
-		my $license_desc = $plugin->xml_to_text( $license );
-	
-		#store simple license data
-		$licenses{$license_start_date} = $license_url;
+		my $license_url = $plugin->xml_to_text( $license );
+		
+		my $start_date = $license->getAttribute( "start_date" );
+		$epdata->{rioxx2_license_ref_input} = {
+                        license_ref => $license_url,
+                        start_date => $start_date,
+                };
 
-		#store license data as note
-		my @license_string;
-		push( @license_string, "starting on $date_string" ) if defined $license_start_date;
-		push( @license_string, $license_desc ) if defined $license_desc;
-		push( @license_string, $license_url ) if defined $license_url;
-		push( @license_string, "license version $license_version" ) if defined $license_version;
-		my $license_note = join( ", ", @license_string );
-
-		#if license note exists, add it to the hash
-		if( defined $license_note )
-		{
-			if( exists $license_notes{$license_start_date} )
-			{
-				$license_notes{$license_start_date} = $license_notes{$license_start_date} . "; $license_note";
-			}
-			else
-			{
-				$license_notes{$license_start_date} = $license_note;
-			}
-		}
-	}
-
-	#try to add earliest license to the document
-	my $added_to_doc = 0;
-	foreach my $date ( sort keys %licenses )
-	{
-		#add licence to doc data if possible - only want the earliest license for this
-		if( exists $license_urls{$licenses{$date}})
-	        {
-			$added_to_doc = 1;
-        		$docdata->{license} = $license_urls{$licenses{$date}};
+		if( exists $license_urls{$license_url} )
+                {
+                        $docdata->{license} = $license_urls{$license_url};
                 }
-		last;
-	}
 
-	if( scalar @licenses > 1 ) #add all notes to Additional Information if more than one license
-	{
-		my @license_info;
-		foreach my $date ( sort keys %license_notes )
-		{
-    			push( @license_info, $license_notes{$date} );
-		}
-		$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "Licenses for this article", join("; ", @license_info ) );
-
-	}
-	elsif( scalar @licenses == 1 && !$added_to_doc) #add to additional information 
-	{
-		foreach my $date ( sort keys %license_notes )
-		{
-    			$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "License for this article", $license_notes{$date} );
-		}
 	}
 
 	#embargo date
@@ -589,42 +480,6 @@ sub xml_to_epdata
 		my $embargo_start_date = $embargo->getAttribute( "start_date" );
 		my $embargo_end_date = $embargo->getAttribute( "end_date" );
 		my $duration = $embargo->getAttribute( "duration" );
-		if( $embargo_start_date )
-		{
-			my ( $year, $month, $day ) = split /-/, $embargo_start_date;
-	                my $date_string = $year;
-        	        $date_string = "$month-$date_string" if defined $month;
-                	$date_string = "$day-$date_string" if defined $day;
-			if( $embargo_start_date ne $publication_date )
-			{	
-				#add embargo note to Additional Information
-				my $embargo_note = "starting on $date_string";
-			
-				if( $embargo_end_date )
-				{
-					my ( $end_year, $end_month, $end_day ) = split /-/, $embargo_end_date;
-			                my $end_date_string = $end_year;
-			                $end_date_string = "$end_month-$end_date_string" if defined $end_month;
-			                $end_date_string = "$end_day-$end_date_string" if defined $end_day;
-					$embargo_note .= ", ending on $end_date_string";
-				}					
-		
-				if( $duration )
-				{
-					$embargo_note .= ", duration $duration ";
-					if( $duration > 1 )
-					{
-						$embargo_note .= "months";
-					}
-					else
-					{
-						$embargo_note .= "month";
-					}
-				}		
-
-				$epdata->{note} = $plugin->appendToNote( $epdata->{note}, "Embargo", $embargo_note );
-			}
-		}
 		if( $embargo_end_date )
 		{
 			$docdata->{date_embargo} = $embargo_end_date;
@@ -769,13 +624,17 @@ sub xml_to_epdata
 	#	}],	
 	#};
 	
-	#loop through all the download links, processing those marked as priamry first
+	#loop through all the download links, processing those marked as primary first
 	#and merge in exsiting docdata retrieved from the metadata for each new document
 	my @documents = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'download_link' );
 	my $secondary = [];
 	foreach my $doc ( @documents )
 	{
-		my $document = $docdata; #copy existing document metadata for this URL		
+		my $document = {};
+		if( $doc->getAttribute( "set_details" ) eq "true" )
+		{
+			$document = $docdata; #copy existing document metadata for this URL		
+		}
 
 		#process primary documents first
 		if( $doc->getAttribute( "primary" ) eq "true" )
@@ -802,29 +661,26 @@ sub xml_to_epdata
 	#now process non-primary urls
 	foreach my $doc ( @{$secondary} )
 	{
-		if( $doc->getAttribute( "primary" ) ne "true" )
+		my $document = {};
+		if( $doc->getAttribute( "set_details" ) eq "true" )
 		{
-			my $document = {};
-			my $docFile = $plugin->getDocData( $session, $doc );
-			if( $docFile )
-			{
-				$document->{language} = $code;
-				my %merge = ( %{$docFile}, %{$document} ); #merge doc information with new file
+			$document = $docdata; #copy existing document metadata for this URL		
+		}
+
+		my $docFile = $plugin->getDocData( $session, $doc );
+		if( $docFile )
+		{
+			$document->{language} = $code;
+			my %merge = ( %{$docFile}, %{$document} ); #merge doc information with new file
 	
-				if( $merge{mime_type} eq "application/zip" )
-				{
-					$merge{content} = "other";
-				}
-				push @{$epdata->{documents}}, \%merge;
+			if( $merge{mime_type} eq "application/zip" )
+			{
+				$merge{content} = "other";
 			}
+			push @{$epdata->{documents}}, \%merge;
 		}
 	}
         return $epdata;
-}
-
-sub mergeDoc
-{
-	my( $plugin, $session, $docdata, $doc )
 }
 
 sub getDocData
@@ -849,7 +705,8 @@ sub getDocData
 		my $filename = $doc->getAttribute( "filename" );
 		my $mime_type = $doc->getAttribute( "format" );
 		my $primary = $doc->getAttribute( "primary" );
-		
+		my $set_details = $doc->getAttribute( "set_details" );		
+
 		my $format = "text";
 		if( $mime_type eq "application/zip" )
 		{	
@@ -906,15 +763,6 @@ sub processName #return an array of names with the family name at the end of the
 	#else try format used at https://github.com/JiscPER/jper-sword-out/blob/develop/docs/system/XWALK.md
 	@names = split(' ', $name);
 	return \@names if scalar @names > 1;
-}
-
-sub appendToNote
-{
-	my( $plugin, $note, $label, $append ) = @_;
-
-	$note = $note . $plugin->phrase( "note_separator") . $label . ": " . $append . " ";
-
-	return $note;
 }
 
 1;
