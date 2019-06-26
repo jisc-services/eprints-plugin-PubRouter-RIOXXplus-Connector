@@ -238,11 +238,7 @@ sub xml_to_epdata
 			$epdata->{issn} = $plugin->xml_to_text( $sourceid );
 			$issn_set = 1; #used to prioritise eissn value
 		}
-		elsif( $sourceid_type eq "issn" && !$issn_set )
-		{
-			$epdata->{issn} = $plugin->xml_to_text( $sourceid );
-		}
-		elsif( $sourceid_type eq "pissn" && $issn_set )
+		elsif( !$issn_set && ( $sourceid_type eq "issn" || $sourceid_type  eq "pissn" ) )
 		{
 			$epdata->{issn} = $plugin->xml_to_text( $sourceid );
 		}
@@ -304,24 +300,10 @@ sub xml_to_epdata
 	foreach my $id (@identifiers)
 	{
 		my $identifier_type = $id->getAttribute( "type" );
-		if( $identifier_type eq "doi" )
-		{
-			$epdata->{id_number} = $plugin->xml_to_text( $id );
-		}
-	}
-
-	#now loop around again, now that DOI has been handled
-	foreach my $id (@identifiers)
-	{
-		my $identifier_type = $id->getAttribute( "type" );
-		if( $identifier_type ne "doi" )
-		{
-			if( !defined $epdata->{id_number} )
-			{
-				$epdata->{id_number} = $plugin->xml_to_text( $id );
-			}	
-		}
-	}
+                $epdata->{id_number} = $plugin->xml_to_text( $id );
+                # Break from loop if DOI is found, otherwise the id_number of this eprint will be the last in the list
+                last if( $identifier_type eq "doi" );
+        }
 
 	#version_of_record
 	my $vor = $plugin->getNameSpaceValue( $xml, $namespaces{'rioxxterms'}, 'version_of_record' );
@@ -376,32 +358,30 @@ sub xml_to_epdata
 	my @dates = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'history_date' );
 	foreach my $date ( @dates )
 	{	
-		my $date_set = 0;
 		my $d = $plugin->xml_to_text( $date );
 		my ( $year, $month, $day ) = split /-/, $d;
 		my $date_type = $date->getAttribute( "type" );
 
+		# add a history date to the record's date field if an acceptance date or publication date hasn't been set previously
 		if( ! ( ($date_type eq "accepted" && $acceptance_set) || ($date_type eq "published" && $publication_set ) ) )
 		{
-			if( $dataset->has_field( "dates" ) )
+			if( $dataset->has_field( "dates" ) ) #the datesdatesdates plugin is likely installed
 			{
 				my $dates_field = $dataset->field( "dates_date_type" );
 				my $types = $dates_field->property( "options" );
-				if( grep { $date_type eq $_ } @{$types} )
+				if( grep { $date_type eq $_ } @{$types} ) #check the date type we're importing is one of the ones available to the datesdatesdates field
 				{
 					$epdata->{dates} ||= [];
 					push @{$epdata->{dates}}, { 
 						date =>	$d,
 						date_type => $date_type,
 					};
-					$date_set = 1;
 				}			
 			}
-			elsif( grep { $date_type eq $_ } @{$dataset->field( "date_type" )->property( "options" )} )
+			elsif( grep { $date_type eq $_ } @{$dataset->field( "date_type" )->property( "options" )} ) #we're using the regular eprint field, but first check to see if we can store this date type
 			{
 				$epdata->{date} = $d;
                 	        $epdata->{date_type} = $date_type;
-				$date_set = 1;
 			}
 		}	
 	}
@@ -455,7 +435,7 @@ sub xml_to_epdata
 	}
 
 	#license
-	my $license = $xml->getElementsByTagNameNS( $namespaces{ali}, "license_ref_start_date" )->item(0);
+	my $license = $xml->getElementsByTagNameNS( $namespaces{ali}, "license_ref" )->item(0);
 	if( $license && $dataset->has_field( "rioxx2_license_ref_input" ) )
 	{
 		my $license_url = $plugin->xml_to_text( $license );
@@ -625,41 +605,27 @@ sub xml_to_epdata
 	#};
 	
 	#loop through all the download links, processing those marked as primary first
-	#and merge in exsiting docdata retrieved from the metadata for each new document
+	#and merge in exsiting docdata retrieved from the metadata for each new document where appropriate
 	my @documents = $xml->getElementsByTagNameNS( $namespaces{'pr'}, 'download_link' );
-	my $secondary = [];
+	my @ordered_links;
+	my @secondary;
 	foreach my $doc ( @documents )
 	{
-		my $document = {};
-		if( $doc->getAttribute( "set_details" ) eq "true" )
-		{
-			$document = $docdata; #copy existing document metadata for this URL		
-		}
-
-		#process primary documents first
 		if( $doc->getAttribute( "primary" ) eq "true" )
 		{
-			my $docFile = $plugin->getDocData( $session, $doc );
-			if( $docFile )
-			{
-				my %merge = ( %{$docFile}, %{$document} ); #merge doc information with new file
-	
-				if( !$merge{content} && $merge{mime_type} eq "application/zip" )
-				{
-					$merge{content} = "other";
-				}
-
-				push @{$epdata->{documents}}, \%merge;
-			}
+			push @ordered_links, $doc;
 		}
 		else
 		{	
-			push @{$secondary}, $doc; #process these documents later
+			push @secondary, $doc;
 		}
 	}
 
-	#now process non-primary urls
-	foreach my $doc ( @{$secondary} )
+        # Append secondary links to the primary set
+        push @ordered_links, @secondary;
+
+	# Now process ordered links
+	foreach my $doc ( @ordered_links )
 	{
 		my $document = {};
 		if( $doc->getAttribute( "set_details" ) eq "true" )
@@ -680,6 +646,7 @@ sub xml_to_epdata
 			push @{$epdata->{documents}}, \%merge;
 		}
 	}
+	
         return $epdata;
 }
 

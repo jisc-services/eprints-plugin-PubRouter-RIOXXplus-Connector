@@ -22,9 +22,9 @@
         <file>
           <filename>plugins/EPrints/Plugin/Import/PubRouter.pm</filename>
           <mime_type>inode/symlink</mime_type>
-          <hash>d8cbc804d17b86dafa6a3f2c87d2df5c</hash>
+          <hash>215b5dc4ea851180dad1755409957721</hash>
           <hash_type>MD5</hash_type>
-          <filesize>23766</filesize>
+          <filesize>23433</filesize>
         </file>
         <file>
           <filename>static/images/epm/pubrouter_rioxx_importer.png</filename>
@@ -62,6 +62,12 @@
         <given>Fyson</given>
       </name>
       <id>rwf1v07@soton.ac.uk</id>
+    </item>
+    <item>
+      <name>
+        <family>Adam</family>
+        <given>Rehin</given>
+      </name>
     </item>
   </creators>
   <datestamp>2018-04-03 00:30:00</datestamp>
