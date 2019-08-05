@@ -143,7 +143,7 @@ sub input_fh_xml
 	my $pr_uri = $node->lookupNamespaceURI( "pr" );
 	if( $pr_uri ne "http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/" )
 	{
-		die "Wrong version of XML received, expecting xmlns:pr=\"http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/\" got xmlns:pr=\"$pr_uri\”";
+		die "Wrong version of XML received, expecting xmlns:pr=\"http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/\" got xmlns:pr=\"$pr_uri\"";
 	}
 	else
 	{
