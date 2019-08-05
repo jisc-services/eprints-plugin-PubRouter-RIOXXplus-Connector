@@ -32,7 +32,7 @@ my %namespaces =
 		'ali' => 'http://www.niso.org/schemas/ali/1.0/',
 		'dcterms' => 'http://purl.org/dc/terms/',
 		'rioxxterms' => 'http://www.rioxx.net/schema/v2.0/rioxx/',
-		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/',
+		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/',
 	);
 
 my %types =
@@ -76,36 +76,21 @@ my %content =
 
 my %license_urls = 
 	(
-		"http://creativecommons.org/licenses/by-nd/3.0/" => 'cc_by_nd',
-		"http://creativecommons.org/licenses/by/3.0/" => 'cc_by',
-		"http://creativecommons.org/licenses/by-nc/3.0/" => 'cc_by_nc',
-		"http://creativecommons.org/licenses/by-nc-nd/3.0/" => 'cc_by_nc_nd',
-		"http://creativecommons.org/licenses/by-nd-sa/3.0/" => 'cc_by_nc_sa',
-		"http://creativecommons.org/licenses/by-sa/3.0/" => 'cc_by_sa',
-		"http://creativecommons.org/licenses/by-nd/4.0/" => 'cc_by_nd_4',
-		"http://creativecommons.org/licenses/by/4.0/" => 'cc_by_4',
-		"http://creativecommons.org/licenses/by-nc/4.0/" => 'cc_by_nc_4',
-		"http://creativecommons.org/licenses/by-nc-nd/4.0/" => 'cc_by_nc_nd_4',
-		"http://creativecommons.org/licenses/by-nd-sa/4.0/" => 'cc_by_nc_sa_4',
-		"http://creativecommons.org/licenses/by-sa/4.0/" => 'cc_by_sa_4',
-		"http://creativecommons.org/publicdomain/zero/1.0/legalcode/" => 'cc_public_domain',
-		"http://www.gnu.org/licenses/gpl.html" => 'cc_gnu_gpl',
-		"http://www.gnu.org/licenses/lgpl.html" => 'cc_gnu_lgpl',
-		"https://creativecommons.org/licenses/by-nd/3.0/" => 'cc_by_nd',
-                "https://creativecommons.org/licenses/by/3.0/" => 'cc_by',
-                "https://creativecommons.org/licenses/by-nc/3.0/" => 'cc_by_nc',
-                "https://creativecommons.org/licenses/by-nc-nd/3.0/" => 'cc_by_nc_nd',
-                "https://creativecommons.org/licenses/by-nd-sa/3.0/" => 'cc_by_nc_sa',
-                "https://creativecommons.org/licenses/by-sa/3.0/" => 'cc_by_sa',
-                "https://creativecommons.org/licenses/by-nd/4.0/" => 'cc_by_nd_4',
-                "https://creativecommons.org/licenses/by/4.0/" => 'cc_by_4',
-                "https://creativecommons.org/licenses/by-nc/4.0/" => 'cc_by_nc_4',
-                "https://creativecommons.org/licenses/by-nc-nd/4.0/" => 'cc_by_nc_nd_4',
-                "https://creativecommons.org/licenses/by-nd-sa/4.0/" => 'cc_by_nc_sa_4',
-                "https://creativecommons.org/licenses/by-sa/4.0/" => 'cc_by_sa_4',
-                "https://creativecommons.org/publicdomain/zero/1.0/legalcode/" => 'cc_public_domain',
-                "https://www.gnu.org/licenses/gpl.html" => 'cc_gnu_gpl',
-                "https://www.gnu.org/licenses/lgpl.html" => 'cc_gnu_lgpl',
+		"creativecommons.org/licenses/by-nd/3.0/" => 'cc_by_nd',
+		"creativecommons.org/licenses/by/3.0/" => 'cc_by',
+		"creativecommons.org/licenses/by-nc/3.0/" => 'cc_by_nc',
+		"creativecommons.org/licenses/by-nc-nd/3.0/" => 'cc_by_nc_nd',
+		"creativecommons.org/licenses/by-nd-sa/3.0/" => 'cc_by_nc_sa',
+		"creativecommons.org/licenses/by-sa/3.0/" => 'cc_by_sa',
+		"creativecommons.org/licenses/by-nd/4.0/" => 'cc_by_nd_4',
+		"creativecommons.org/licenses/by/4.0/" => 'cc_by_4',
+		"creativecommons.org/licenses/by-nc/4.0/" => 'cc_by_nc_4',
+		"creativecommons.org/licenses/by-nc-nd/4.0/" => 'cc_by_nc_nd_4',
+		"creativecommons.org/licenses/by-nd-sa/4.0/" => 'cc_by_nc_sa_4',
+		"creativecommons.org/licenses/by-sa/4.0/" => 'cc_by_sa_4',
+		"creativecommons.org/publicdomain/zero/1.0/legalcode/" => 'cc_public_domain',
+		"www.gnu.org/licenses/gpl.html" => 'cc_gnu_gpl',
+		"www.gnu.org/licenses/lgpl.html" => 'cc_gnu_lgpl',
 	);
 
 sub new
@@ -153,14 +138,23 @@ sub input_fh_xml
 
 	my $doc = EPrints::XML::parse_xml_string( $xml );
 
-	my $dataobj = $plugin->xml_to_dataobj( $opts{dataset}, $doc->documentElement );
-		
-	EPrints::XML::dispose( $doc );
-	
-	return EPrints::List->new(
-       	dataset => $opts{dataset},
-       	session => $plugin->{session},
-       	ids => [defined($dataobj) ? $dataobj->get_id : ()] );
+	my $node = $doc->documentElement;
+	my @ns = $node->getNamespaces;
+	my $pr_uri = $node->lookupNamespaceURI( "pr" );
+	if( $pr_uri ne "http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/" )
+	{
+		die "Wrong version of XML received, expecting xmlns:pr=\"http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/\" got xmlns:pr=\"$pr_uri\"";
+	}
+	else
+	{
+		my $dataobj = $plugin->xml_to_dataobj( $opts{dataset}, $doc->documentElement );	
+		EPrints::XML::dispose( $doc );
+		return EPrints::List->new(
+			dataset => $opts{dataset},
+			session => $plugin->{session},
+			ids => [defined($dataobj) ? $dataobj->get_id : ()] 
+		);
+	}
 }
 
 sub xml_to_epdata
@@ -448,9 +442,13 @@ sub xml_to_epdata
 
 		if( exists $license_urls{$license_url} )
                 {
-                        $docdata->{license} = $license_urls{$license_url};
+			my $stripped_lic_url = $license_url;
+			$stripped_lic_url =~ s/^https?:\/\///i;    # Remove 'http://' or 'https://' prefix
+			if( exists $license_urls{$stripped_lic_url } )
+        	        {
+                	        $docdata->{license} = $license_urls{$stripped_lic_url};
+	                }
                 }
-
 	}
 
 	#embargo date
@@ -671,8 +669,6 @@ sub getDocData
 		#add metadata and file to the document
 		my $filename = $doc->getAttribute( "filename" );
 		my $mime_type = $doc->getAttribute( "format" );
-		my $primary = $doc->getAttribute( "primary" );
-		my $set_details = $doc->getAttribute( "set_details" );		
 
 		my $format = "text";
 		if( $mime_type eq "application/zip" )
