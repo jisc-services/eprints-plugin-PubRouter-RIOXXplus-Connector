@@ -22,9 +22,9 @@
         <file>
           <filename>plugins/EPrints/Plugin/Import/PubRouter.pm</filename>
           <mime_type>inode/symlink</mime_type>
-          <hash>215b5dc4ea851180dad1755409957721</hash>
+          <hash>e4f00280ffe52d67f84cfe2961b7b5ca</hash>
           <hash_type>MD5</hash_type>
-          <filesize>23433</filesize>
+          <filesize>22551</filesize>
         </file>
         <file>
           <filename>static/images/epm/pubrouter_rioxx_importer.png</filename>

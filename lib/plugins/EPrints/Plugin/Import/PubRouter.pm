@@ -32,7 +32,7 @@ my %namespaces =
 		'ali' => 'http://www.niso.org/schemas/ali/1.0/',
 		'dcterms' => 'http://purl.org/dc/terms/',
 		'rioxxterms' => 'http://www.rioxx.net/schema/v2.0/rioxx/',
-		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/',
+		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/2.0/',
 	);
 
 my %types =
@@ -138,14 +138,23 @@ sub input_fh_xml
 
 	my $doc = EPrints::XML::parse_xml_string( $xml );
 
-	my $dataobj = $plugin->xml_to_dataobj( $opts{dataset}, $doc->documentElement );
-		
-	EPrints::XML::dispose( $doc );
-	
-	return EPrints::List->new(
-       	dataset => $opts{dataset},
-       	session => $plugin->{session},
-       	ids => [defined($dataobj) ? $dataobj->get_id : ()] );
+	my $node = $doc->documentElement;
+	my @ns = $node->getNamespaces;
+	my $pr_uri = $node->lookupNamespaceURI( "pr" );
+	if( $pr_uri ne "http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/" )
+	{
+		die "Wrong version of XML received, expecting xmlns:pr=\"http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/\" got xmlns:pr=\"$pr_uri\”";
+	}
+	else
+	{
+		my $dataobj = $plugin->xml_to_dataobj( $opts{dataset}, $doc->documentElement );	
+		EPrints::XML::dispose( $doc );
+		return EPrints::List->new(
+			dataset => $opts{dataset},
+			session => $plugin->{session},
+			ids => [defined($dataobj) ? $dataobj->get_id : ()] 
+		);
+	}
 }
 
 sub xml_to_epdata
