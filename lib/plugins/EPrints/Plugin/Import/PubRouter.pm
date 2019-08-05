@@ -32,7 +32,7 @@ my %namespaces =
 		'ali' => 'http://www.niso.org/schemas/ali/1.0/',
 		'dcterms' => 'http://purl.org/dc/terms/',
 		'rioxxterms' => 'http://www.rioxx.net/schema/v2.0/rioxx/',
-		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/2.0/',
+		'pr' => 'http://pubrouter.jisc.ac.uk/rioxxplus/v2.0/',
 	);
 
 my %types =
