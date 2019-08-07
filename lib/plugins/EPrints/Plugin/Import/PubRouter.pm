@@ -433,22 +433,18 @@ sub xml_to_epdata
 	if( $license && $dataset->has_field( "rioxx2_license_ref_input" ) )
 	{
 		my $license_url = $plugin->xml_to_text( $license );
-		
 		my $start_date = $license->getAttribute( "start_date" );
 		$epdata->{rioxx2_license_ref_input} = {
                         license_ref => $license_url,
                         start_date => $start_date,
                 };
 
-		if( exists $license_urls{$license_url} )
+		my $stripped_lic_url = $license_url;
+		$stripped_lic_url =~ s/^https?:\/\///i;    # Remove 'http://' or 'https://' prefix
+		if( exists $license_urls{$stripped_lic_url } )
                 {
-			my $stripped_lic_url = $license_url;
-			$stripped_lic_url =~ s/^https?:\/\///i;    # Remove 'http://' or 'https://' prefix
-			if( exists $license_urls{$stripped_lic_url } )
-        	        {
-                	        $docdata->{license} = $license_urls{$stripped_lic_url};
-	                }
-                }
+               	        $docdata->{license} = $license_urls{$stripped_lic_url};
+	        }               
 	}
 
 	#embargo date
